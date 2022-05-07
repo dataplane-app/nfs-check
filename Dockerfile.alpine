@@ -31,6 +31,8 @@ RUN adduser \
 
 COPY --from=builder go/src/build/main /dataplane/main
 
+RUN chown -R appuser:appuser /dataplane && chmod +w /dataplane
+
 WORKDIR /dataplane
 
 USER appuser:appuser
