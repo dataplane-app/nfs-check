@@ -1,0 +1,38 @@
+FROM golang:1.18-alpine as builder
+
+RUN mkdir -p /go/src/build
+
+WORKDIR /go/src/build
+
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
+ADD main.go /go/src/build/
+
+ARG SKAFFOLD_GO_GCFLAGS
+RUN go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o main main.go
+
+
+FROM alpine:3.15
+
+# Create appuser
+ENV USER=appuser
+ENV UID=10001
+
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/dataplane" \
+    --shell "/sbin/nologin" \
+#    --no-create-home \
+    --uid "${UID}" \
+    "${USER}"
+
+COPY --from=builder go/src/build/main /dataplane/main
+
+WORKDIR /dataplane
+
+USER appuser:appuser
+
+CMD ["./main"]
